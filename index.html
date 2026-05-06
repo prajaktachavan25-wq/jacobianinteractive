@@ -3,82 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jacobian Quest</title>
+    <title>Jacobian Academy | Interactive Learner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.all.js"></script>
     <style>
-        /* CSS: The "Fun" Style */
         :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
             --bg: #0f172a;
-            --card: #1e293b;
-            --accent: #38bdf8;
-            --success: #4ade80;
-            --text: #f1f5f9;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --success: #22c55e;
+            --error: #ef4444;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
-            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
         }
 
-        .game-container {
-            background: var(--card);
-            padding: 2rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            width: 90%;
-            max-width: 500px;
+        /* Flashcard Styling */
+        .flashcard-section {
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 40px;
+        }
+
+        .card-container {
+            perspective: 1000px;
+            height: 200px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
             text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-radius: 15px;
+        }
+
+        .card-container.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border-radius: 15px;
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-sizing: border-box;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: var(--primary);
+        }
+
+        /* Problem Section */
+        .workspace {
+            width: 100%;
+            max-width: 800px;
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        h1 { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-
-        .progress-bar {
-            height: 8px;
-            background: #334155;
+        .problem-text {
+            font-size: 1.4rem;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
             border-radius: 10px;
-            margin-bottom: 2rem;
-            overflow: hidden;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--secondary);
         }
 
-        #progress-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--accent);
-            transition: width 0.4s ease;
-        }
-
-        .function-display {
-            background: rgba(0,0,0,0.3);
-            padding: 1.5rem;
-            border-radius: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            border-left: 4px solid var(--accent);
-        }
-
-        .input-group {
+        .step-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 2rem;
+            gap: 20px;
         }
 
-        .input-card {
-            background: #334155;
-            padding: 10px;
+        .step-input-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
             border-radius: 12px;
         }
 
-        label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; }
+        label { color: #94a3b8; font-size: 0.9rem; }
 
         input {
             width: 100%;
@@ -86,134 +115,176 @@
             border: none;
             border-bottom: 2px solid #475569;
             color: white;
-            text-align: center;
             font-size: 1.1rem;
-            padding: 5px 0;
+            padding: 8px 0;
             outline: none;
-            transition: border-color 0.3s;
+            margin-top: 5px;
         }
 
-        input:focus { border-color: var(--accent); }
+        input.valid { border-color: var(--success); color: var(--success); }
+        input.invalid { border-color: var(--error); }
 
-        .correct { border-color: var(--success) !important; color: var(--success); }
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
 
         button {
-            background: var(--accent);
-            color: var(--bg);
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
             border: none;
-            padding: 1rem 2rem;
-            border-radius: 12px;
             font-weight: bold;
             cursor: pointer;
-            width: 100%;
-            font-size: 1rem;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: 0.3s;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(56, 189, 248, 0.4);
-        }
-
-        .success-message {
-            display: none;
-            color: var(--success);
-            margin-top: 1rem;
+        .btn-check { background: var(--primary); color: white; }
+        .btn-next { background: #475569; color: white; }
+        
+        .feedback-toast {
+            margin-top: 15px;
             font-weight: bold;
-            animation: bounce 0.5s infinite alternate;
+            text-align: center;
         }
-
-        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
     </style>
 </head>
 <body>
 
-<div class="game-container">
-    <h1>Jacobian Quest</h1>
-    <div class="progress-bar"><div id="progress-fill"></div></div>
-
-    <div class="function-display" id="problem">
-        Loading challenge...
-    </div>
-
-    <div class="input-group">
-        <div class="input-card">
-            <label>∂f₁ / ∂x</label>
-            <input type="text" id="ans0" oninput="validate(0)" placeholder="?">
-        </div>
-        <div class="input-card">
-            <label>∂f₁ / ∂y</label>
-            <input type="text" id="ans1" oninput="validate(1)" placeholder="?">
-        </div>
-        <div class="input-card">
-            <label>∂f₂ / ∂x</label>
-            <input type="text" id="ans2" oninput="validate(2)" placeholder="?">
-        </div>
-        <div class="input-card">
-            <label>∂f₂ / ∂y</label>
-            <input type="text" id="ans3" oninput="validate(3)" placeholder="?">
+    <div class="flashcard-section">
+        <h2 style="text-align: center; color: var(--secondary);">Theory Flashcard</h2>
+        <div class="card-container" id="theoryCard" onclick="this.classList.toggle('flipped')">
+            <div class="card-inner">
+                <div class="card-front">
+                    <h3 id="cardTitle">What is a Jacobian?</h3>
+                    <p style="color: #94a3b8;">(Click to flip)</p>
+                </div>
+                <div class="card-back">
+                    <p id="cardDescription">The Jacobian matrix is a matrix of all first-order partial derivatives of a vector-valued function.</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="win-msg" class="success-message">✨ MATRIX COMPLETE! ✨</div>
-    <button onclick="newGame()" style="margin-top: 10px; background: #475569; color: white;">New Challenge</button>
-</div>
+    <div class="workspace">
+        <h2 style="margin-top:0;">Step-by-Step Solver</h2>
+        <div class="problem-text" id="problemDisplay">
+            Loading problem...
+        </div>
+
+        <div class="step-grid">
+            <div class="step-input-box">
+                <label id="l0">∂u / ∂x</label>
+                <input type="text" id="ans0" placeholder="Type answer...">
+            </div>
+            <div class="step-input-box">
+                <label id="l1">∂u / ∂y</label>
+                <input type="text" id="ans1" placeholder="Type answer...">
+            </div>
+            <div class="step-input-box">
+                <label id="l2">∂v / ∂x</label>
+                <input type="text" id="ans2" placeholder="Type answer...">
+            </div>
+            <div class="step-input-box">
+                <label id="l3">∂v / ∂y</label>
+                <input type="text" id="ans3" placeholder="Type answer...">
+            </div>
+        </div>
+
+        <div id="toast" class="feedback-toast"></div>
+
+        <div class="controls">
+            <button class="btn-check" onclick="verifySteps()">Verify My Answers</button>
+            <button class="btn-next" onclick="loadNextProblem()">Next Problem</button>
+        </div>
+    </div>
 
 <script>
-    /* JavaScript: The "Brain" */
-    let targets = [];
-    let correctCount = [false, false, false, false];
+    const theoryItems = [
+        { q: "What is a Jacobian?", a: "It's a matrix of partial derivatives that describes how a multi-variable function changes at a point." },
+        { q: "The 2x2 Formula", a: "J = [[∂u/∂x, ∂u/∂y], [∂v/∂x, ∂v/∂y]]" },
+        { q: "What if J = 0?", a: "If the Jacobian is zero everywhere, the functions are 'Functionally Dependent' (related by a formula)." }
+    ];
 
-    function newGame() {
-        const base = ["x^2", "y^3", "2*x", "5*y", "x*y", "sin(x)", "cos(y)"];
-        const f1 = base[Math.floor(Math.random()*4)] + " + " + base[Math.floor(Math.random()*3+4)];
-        const f2 = base[Math.floor(Math.random()*4)] + " - " + base[Math.floor(Math.random()*3+4)];
-        
-        document.getElementById('problem').innerHTML = `f₁: ${f1}<br>f₂: ${f2}`;
-        
-        targets = [
-            math.derivative(f1, 'x').toString(),
-            math.derivative(f1, 'y').toString(),
-            math.derivative(f2, 'x').toString(),
-            math.derivative(f2, 'y').toString()
-        ];
-
-        correctCount = [false, false, false, false];
-        updateProgress();
-        
-        for(let i=0; i<4; i++) {
-            const el = document.getElementById('ans'+i);
-            el.value = "";
-            el.classList.remove('correct');
+    const problems = [
+        { 
+            desc: "If u = x(1-y), v = xy, find the Jacobian.",
+            u: "x - x*y", v: "x*y",
+            sols: ["1-y", "-x", "y", "x"]
+        },
+        { 
+            desc: "If u = x + y^2/x, v = y^2/x, find the Jacobian.",
+            u: "x + y^2/x", v: "y^2/x",
+            sols: ["1 - y^2/x^2", "2*y/x", "-y^2/x^2", "2*y/x"]
+        },
+        {
+            desc: "Trig Challenge: x = e^v * sec(u), y = e^v * tan(u)",
+            u: "sec(u)*exp(v)", v: "tan(u)*exp(v)",
+            sols: ["sec(u)*tan(u)*exp(v)", "sec(u)*exp(v)", "sec(u)^2 * exp(v)", "tan(u)*exp(v)"]
         }
-        document.getElementById('win-msg').style.display = 'none';
-    }
+    ];
 
-    function validate(idx) {
-        const userIn = document.getElementById('ans'+idx).value;
-        const el = document.getElementById('ans'+idx);
+    let currentProbIdx = 0;
+    let currentTheoryIdx = 0;
+
+    function loadNextProblem() {
+        currentProbIdx = (currentProbIdx + 1) % problems.length;
+        currentTheoryIdx = (currentTheoryIdx + 1) % theoryItems.length;
         
-        try {
-            if(math.simplify(userIn).equals(math.simplify(targets[idx]))) {
-                el.classList.add('correct');
-                correctCount[idx] = true;
-                updateProgress();
-            } else {
-                el.classList.remove('correct');
-                correctCount[idx] = false;
-                updateProgress();
+        // Update Flashcard
+        document.getElementById('cardTitle').innerText = theoryItems[currentTheoryIdx].q;
+        document.getElementById('cardDescription').innerText = theoryItems[currentTheoryIdx].a;
+        document.getElementById('theoryCard').classList.remove('flipped');
+
+        // Update Problem
+        const p = problems[currentProbIdx];
+        document.getElementById('problemDisplay').innerText = p.desc;
+        
+        // Clear Inputs
+        for(let i=0; i<4; i++) {
+            const input = document.getElementById('ans' + i);
+            input.value = "";
+            input.className = "";
+        }
+        document.getElementById('toast').innerText = "";
+    }
+
+    function verifySteps() {
+        const p = problems[currentProbIdx];
+        let allCorrect = true;
+
+        for(let i=0; i<4; i++) {
+            const userAns = document.getElementById('ans' + i).value;
+            const inputEl = document.getElementById('ans' + i);
+            
+            try {
+                // Using Math.js to check if expressions are equal
+                const isCorrect = math.simplify(userAns).equals(math.simplify(p.sols[i]));
+                if(isCorrect) {
+                    inputEl.className = "valid";
+                } else {
+                    inputEl.className = "invalid";
+                    allCorrect = false;
+                }
+            } catch(e) {
+                inputEl.className = "invalid";
+                allCorrect = false;
             }
-        } catch(e) {}
+        }
+
+        const toast = document.getElementById('toast');
+        if(allCorrect) {
+            toast.innerText = "Excellent! You mastered this Jacobian.";
+            toast.style.color = "var(--success)";
+        } else {
+            toast.innerText = "Some steps are incorrect. Hint: Re-check your partial derivatives!";
+            toast.style.color = "var(--error)";
+        }
     }
 
-    function updateProgress() {
-        const score = correctCount.filter(x => x).length;
-        document.getElementById('progress-fill').style.width = (score / 4 * 100) + "%";
-        if(score === 4) document.getElementById('win-msg').style.display = 'block';
-    }
-
-    newGame();
+    // Initial load
+    document.getElementById('problemDisplay').innerText = problems[0].desc;
 </script>
-
 </body>
 </html>
