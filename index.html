@@ -3,288 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jacobian Academy | Interactive Learner</title>
+    <title>Jacobian Mastery Portal</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.all.js"></script>
     <style>
         :root {
-            --primary: #6366f1;
-            --secondary: #a855f7;
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --success: #22c55e;
-            --error: #ef4444;
+            --primary: #5c48db; --bg: #f0f4ff; --surface: #ffffff;
+            --text: #1e293b; --tile: #e1e9ff; --success: #10b981; --accent: #f43f5e;
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
+        * { box-sizing: border-box; transition: all 0.3s ease; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; line-height: 1.6; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        header {
+            background: var(--surface); padding: 1rem 5%;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;
         }
 
-        /* Flashcard Styling */
-        .flashcard-section {
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 40px;
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); cursor: pointer; }
+
+        /* Dashboard Tiles */
+        .dashboard { padding: 40px 10%; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .tile {
+            background: var(--tile); border-radius: 20px; padding: 30px;
+            text-align: center; cursor: pointer; border: 2px solid transparent;
         }
+        .tile:hover { transform: translateY(-5px); border-color: var(--primary); background: #dce4ff; }
 
-        .card-container {
-            perspective: 1000px;
-            height: 200px;
-            cursor: pointer;
+        /* Content Sections */
+        .section { display: none; padding: 40px 10%; max-width: 900px; margin: 0 auto; animation: fadeIn 0.5s forwards; }
+        .section.active { display: block; }
+        .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* Theory Styles */
+        .step-pill { display: inline-block; padding: 5px 15px; background: var(--primary); color: white; border-radius: 20px; font-size: 0.8rem; margin-bottom: 10px; }
+        .formula-box { background: #1e293b; color: #a5f3fc; padding: 20px; border-radius: 12px; font-family: monospace; text-align: center; font-size: 1.2rem; }
+
+        /* Practice Styles */
+        .step-row { 
+            display: flex; align-items: center; gap: 15px; margin-bottom: 15px; 
+            padding: 15px; border-radius: 12px; background: #f8fafc; opacity: 0.4; pointer-events: none;
         }
-
-        .card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            transition: transform 0.6s;
-            transform-style: preserve-3d;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            border-radius: 15px;
-        }
-
-        .card-container.flipped .card-inner {
-            transform: rotateY(180deg);
-        }
-
-        .card-front, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            border-radius: 15px;
-            background: var(--surface);
-            border: 1px solid rgba(255,255,255,0.1);
-            box-sizing: border-box;
-        }
-
-        .card-back {
-            transform: rotateY(180deg);
-            background: var(--primary);
-        }
-
-        /* Problem Section */
-        .workspace {
-            width: 100%;
-            max-width: 800px;
-            background: var(--surface);
-            padding: 30px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .problem-text {
-            font-size: 1.4rem;
-            background: rgba(0,0,0,0.2);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            border-left: 5px solid var(--secondary);
-        }
-
-        .step-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .step-input-box {
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            border-radius: 12px;
-        }
-
-        label { color: #94a3b8; font-size: 0.9rem; }
-
-        input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #475569;
-            color: white;
-            font-size: 1.1rem;
-            padding: 8px 0;
-            outline: none;
-            margin-top: 5px;
-        }
-
-        input.valid { border-color: var(--success); color: var(--success); }
-        input.invalid { border-color: var(--error); }
-
-        .controls {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-check { background: var(--primary); color: white; }
-        .btn-next { background: #475569; color: white; }
+        .step-row.active { opacity: 1; pointer-events: all; border-left: 5px solid var(--primary); }
+        input { flex: 1; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; outline: none; }
+        input.correct { border-color: var(--success); background: #f0fdf4; pointer-events: none; }
         
-        .feedback-toast {
-            margin-top: 15px;
-            font-weight: bold;
-            text-align: center;
-        }
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.8; }
+
+        /* Contributors Grid */
+        .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .member { display: flex; align-items: center; gap: 15px; background: var(--tile); padding: 15px; border-radius: 15px; }
+        .avatar { width: 40px; height: 40px; background: #cbd5e1; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <div class="flashcard-section">
-        <h2 style="text-align: center; color: var(--secondary);">Theory Flashcard</h2>
-        <div class="card-container" id="theoryCard" onclick="this.classList.toggle('flipped')">
-            <div class="card-inner">
-                <div class="card-front">
-                    <h3 id="cardTitle">What is a Jacobian?</h3>
-                    <p style="color: #94a3b8;">(Click to flip)</p>
-                </div>
-                <div class="card-back">
-                    <p id="cardDescription">The Jacobian matrix is a matrix of all first-order partial derivatives of a vector-valued function.</p>
-                </div>
-            </div>
+<header>
+    <div class="logo" onclick="showView('dashboard')">JacobianPortal.</div>
+    <div>Mastery: <span id="progress-val">0%</span></div>
+</header>
+
+<div id="view-dashboard" class="section active dashboard">
+    <div class="tile" onclick="showView('theory')"><h3>📖 Theory</h3></div>
+    <div class="tile" onclick="showView('practice')"><h3>✏️ Practice</h3></div>
+    <div class="tile" onclick="showView('contributors')"><h3>👥 Team</h3></div>
+</div>
+
+<div id="view-theory" class="section">
+    <button onclick="showView('dashboard')">← Dashboard</button>
+    <div class="card">
+        <h1>Understanding the Jacobian</h1>
+        <p>In multivariable calculus, the <b>Jacobian Matrix</b> is the best linear approximation of a function near a specific point. Think of it as the "multi-dimensional slope."</p>
+        
+        <div class="step-pill">The Core Steps</div>
+        <ol>
+            <li><b>Identify Functions:</b> Separate your equations into $u(x,y)$ and $v(x,y)$.</li>
+            <li><b>Partial Differentiation:</b> Differentiate each function with respect to every variable separately.</li>
+            <li><b>Arrange in Matrix:</b> Place $u$'s derivatives in Row 1 and $v$'s in Row 2.</li>
+            <li><b>Find Determinant:</b> Calculate $ad - bc$ to find the Jacobian Determinant.</li>
+        </ol>
+
+        <div class="formula-box">
+            J = (∂u/∂x)(∂v/∂y) - (∂u/∂y)(∂v/∂x)
         </div>
     </div>
+</div>
 
-    <div class="workspace">
-        <h2 style="margin-top:0;">Step-by-Step Solver</h2>
-        <div class="problem-text" id="problemDisplay">
-            Loading problem...
+<div id="view-practice" class="section">
+    <button onclick="showView('dashboard')">← Dashboard</button>
+    <div class="card">
+        <h2>Practice Solver</h2>
+        <p id="prob-desc" style="background: #f1f5f9; padding: 15px; border-radius: 10px; font-weight: bold;"></p>
+        
+        <div id="steps-container">
+            <div class="step-row active" id="row-0">
+                <span style="width:100px;">∂u/∂x:</span>
+                <input type="text" id="ans-0" placeholder="Type here...">
+                <button onclick="check(0)">Verify</button>
+            </div>
+            <div class="step-row" id="row-1">
+                <span style="width:100px;">∂u/∂y:</span>
+                <input type="text" id="ans-1" placeholder="Type here...">
+                <button onclick="check(1)">Verify</button>
+            </div>
+            <div class="step-row" id="row-2">
+                <span style="width:100px;">∂v/∂x:</span>
+                <input type="text" id="ans-2" placeholder="Type here...">
+                <button onclick="check(2)">Verify</button>
+            </div>
+            <div class="step-row" id="row-3">
+                <span style="width:100px;">∂v/∂y:</span>
+                <input type="text" id="ans-3" placeholder="Type here...">
+                <button onclick="check(3)">Verify</button>
+            </div>
         </div>
+        <button id="next-btn" style="display:none; width:100%; background:var(--success); margin-top:10px;" onclick="nextProblem()">Next Problem →</button>
+    </div>
+</div>
 
-        <div class="step-grid">
-            <div class="step-input-box">
-                <label id="l0">∂u / ∂x</label>
-                <input type="text" id="ans0" placeholder="Type answer...">
-            </div>
-            <div class="step-input-box">
-                <label id="l1">∂u / ∂y</label>
-                <input type="text" id="ans1" placeholder="Type answer...">
-            </div>
-            <div class="step-input-box">
-                <label id="l2">∂v / ∂x</label>
-                <input type="text" id="ans2" placeholder="Type answer...">
-            </div>
-            <div class="step-input-box">
-                <label id="l3">∂v / ∂y</label>
-                <input type="text" id="ans3" placeholder="Type answer...">
-            </div>
-        </div>
-
-        <div id="toast" class="feedback-toast"></div>
-
-        <div class="controls">
-            <button class="btn-check" onclick="verifySteps()">Verify My Answers</button>
-            <button class="btn-next" onclick="loadNextProblem()">Next Problem</button>
+<div id="view-contributors" class="section">
+    <button onclick="showView('dashboard')">← Dashboard</button>
+    <div class="card">
+        <h2>Contributors</h2>
+        <div class="team-grid">
+            <div class="member"><div class="avatar"></div><div><b>Prajakta</b><br>Lead Developer</div></div>
+            <div class="member"><div class="avatar"></div><div><b>Math.js</b><br>Computation Engine</div></div>
         </div>
     </div>
+</div>
 
 <script>
-    const theoryItems = [
-        { q: "What is a Jacobian?", a: "It's a matrix of partial derivatives that describes how a multi-variable function changes at a point." },
-        { q: "The 2x2 Formula", a: "J = [[∂u/∂x, ∂u/∂y], [∂v/∂x, ∂v/∂y]]" },
-        { q: "What if J = 0?", a: "If the Jacobian is zero everywhere, the functions are 'Functionally Dependent' (related by a formula)." }
-    ];
-
     const problems = [
-        { 
-            desc: "If u = x(1-y), v = xy, find the Jacobian.",
-            u: "x - x*y", v: "x*y",
-            sols: ["1-y", "-x", "y", "x"]
-        },
-        { 
-            desc: "If u = x + y^2/x, v = y^2/x, find the Jacobian.",
-            u: "x + y^2/x", v: "y^2/x",
-            sols: ["1 - y^2/x^2", "2*y/x", "-y^2/x^2", "2*y/x"]
-        },
-        {
-            desc: "Trig Challenge: x = e^v * sec(u), y = e^v * tan(u)",
-            u: "sec(u)*exp(v)", v: "tan(u)*exp(v)",
-            sols: ["sec(u)*tan(u)*exp(v)", "sec(u)*exp(v)", "sec(u)^2 * exp(v)", "tan(u)*exp(v)"]
-        }
+        { q: "Problem: u = x(1-y), v = xy", ans: ["1-y", "-x", "y", "x"] },
+        { q: "Problem: u = x + y^2/x, v = y^2/x", ans: ["1 - (y^2/x^2)", "2*y/x", "-(y^2/x^2)", "2*y/x"] },
+        { q: "Trig: x = e^v sec(u), y = e^v tan(u)", ans: ["exp(v)*sec(u)*tan(u)", "exp(v)*sec(u)", "exp(v)*sec(u)^2", "exp(v)*tan(u)"] }
     ];
 
-    let currentProbIdx = 0;
-    let currentTheoryIdx = 0;
+    let pIdx = 0;
+    let score = 0;
 
-    function loadNextProblem() {
-        currentProbIdx = (currentProbIdx + 1) % problems.length;
-        currentTheoryIdx = (currentTheoryIdx + 1) % theoryItems.length;
-        
-        // Update Flashcard
-        document.getElementById('cardTitle').innerText = theoryItems[currentTheoryIdx].q;
-        document.getElementById('cardDescription').innerText = theoryItems[currentTheoryIdx].a;
-        document.getElementById('theoryCard').classList.remove('flipped');
-
-        // Update Problem
-        const p = problems[currentProbIdx];
-        document.getElementById('problemDisplay').innerText = p.desc;
-        
-        // Clear Inputs
-        for(let i=0; i<4; i++) {
-            const input = document.getElementById('ans' + i);
-            input.value = "";
-            input.className = "";
-        }
-        document.getElementById('toast').innerText = "";
+    function showView(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('view-' + id).classList.add('active');
+        if(id === 'practice') nextProblem(true);
     }
 
-    function verifySteps() {
-        const p = problems[currentProbIdx];
-        let allCorrect = true;
-
+    function nextProblem(initial = false) {
+        if(!initial) pIdx = (pIdx + 1) % problems.length;
+        document.getElementById('prob-desc').innerText = problems[pIdx].q;
+        document.getElementById('next-btn').style.display = 'none';
         for(let i=0; i<4; i++) {
-            const userAns = document.getElementById('ans' + i).value;
-            const inputEl = document.getElementById('ans' + i);
-            
-            try {
-                // Using Math.js to check if expressions are equal
-                const isCorrect = math.simplify(userAns).equals(math.simplify(p.sols[i]));
-                if(isCorrect) {
-                    inputEl.className = "valid";
+            const row = document.getElementById('row-'+i);
+            const input = document.getElementById('ans-'+i);
+            input.value = ""; input.className = "";
+            row.classList.remove('active');
+            if(i===0) row.classList.add('active');
+        }
+    }
+
+    function check(idx) {
+        const val = document.getElementById('ans-'+idx).value;
+        const target = problems[pIdx].ans[idx];
+        try {
+            if(math.simplify(val).equals(math.simplify(target))) {
+                document.getElementById('ans-'+idx).classList.add('correct');
+                if(idx < 3) {
+                    document.getElementById('row-'+(idx+1)).classList.add('active');
                 } else {
-                    inputEl.className = "invalid";
-                    allCorrect = false;
+                    document.getElementById('next-btn').style.display = 'block';
+                    score += 33;
+                    document.getElementById('progress-val').innerText = Math.min(score, 100) + "%";
                 }
-            } catch(e) {
-                inputEl.className = "invalid";
-                allCorrect = false;
-            }
-        }
-
-        const toast = document.getElementById('toast');
-        if(allCorrect) {
-            toast.innerText = "Excellent! You mastered this Jacobian.";
-            toast.style.color = "var(--success)";
-        } else {
-            toast.innerText = "Some steps are incorrect. Hint: Re-check your partial derivatives!";
-            toast.style.color = "var(--error)";
-        }
+            } else { alert("Not quite. Re-check your partial differentiation!"); }
+        } catch(e) { alert("Invalid input! Use standard notation like 2*x/y"); }
     }
-
-    // Initial load
-    document.getElementById('problemDisplay').innerText = problems[0].desc;
 </script>
+
 </body>
 </html>
