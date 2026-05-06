@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jacobian Quest</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.all.js"></script>
+    <style>
+        /* CSS: The "Fun" Style */
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --success: #4ade80;
+            --text: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; text-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+
+        .progress-bar {
+            height: 8px;
+            background: #334155;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            transition: width 0.4s ease;
+        }
+
+        .function-display {
+            background: rgba(0,0,0,0.3);
+            padding: 1.5rem;
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--accent);
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .input-card {
+            background: #334155;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; }
+
+        input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #475569;
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 5px 0;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        .correct { border-color: var(--success) !important; color: var(--success); }
+
+        button {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .success-message {
+            display: none;
+            color: var(--success);
+            margin-top: 1rem;
+            font-weight: bold;
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.05); } }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Jacobian Quest</h1>
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+
+    <div class="function-display" id="problem">
+        Loading challenge...
+    </div>
+
+    <div class="input-group">
+        <div class="input-card">
+            <label>∂f₁ / ∂x</label>
+            <input type="text" id="ans0" oninput="validate(0)" placeholder="?">
+        </div>
+        <div class="input-card">
+            <label>∂f₁ / ∂y</label>
+            <input type="text" id="ans1" oninput="validate(1)" placeholder="?">
+        </div>
+        <div class="input-card">
+            <label>∂f₂ / ∂x</label>
+            <input type="text" id="ans2" oninput="validate(2)" placeholder="?">
+        </div>
+        <div class="input-card">
+            <label>∂f₂ / ∂y</label>
+            <input type="text" id="ans3" oninput="validate(3)" placeholder="?">
+        </div>
+    </div>
+
+    <div id="win-msg" class="success-message">✨ MATRIX COMPLETE! ✨</div>
+    <button onclick="newGame()" style="margin-top: 10px; background: #475569; color: white;">New Challenge</button>
+</div>
+
+<script>
+    /* JavaScript: The "Brain" */
+    let targets = [];
+    let correctCount = [false, false, false, false];
+
+    function newGame() {
+        const base = ["x^2", "y^3", "2*x", "5*y", "x*y", "sin(x)", "cos(y)"];
+        const f1 = base[Math.floor(Math.random()*4)] + " + " + base[Math.floor(Math.random()*3+4)];
+        const f2 = base[Math.floor(Math.random()*4)] + " - " + base[Math.floor(Math.random()*3+4)];
+        
+        document.getElementById('problem').innerHTML = `f₁: ${f1}<br>f₂: ${f2}`;
+        
+        targets = [
+            math.derivative(f1, 'x').toString(),
+            math.derivative(f1, 'y').toString(),
+            math.derivative(f2, 'x').toString(),
+            math.derivative(f2, 'y').toString()
+        ];
+
+        correctCount = [false, false, false, false];
+        updateProgress();
+        
+        for(let i=0; i<4; i++) {
+            const el = document.getElementById('ans'+i);
+            el.value = "";
+            el.classList.remove('correct');
+        }
+        document.getElementById('win-msg').style.display = 'none';
+    }
+
+    function validate(idx) {
+        const userIn = document.getElementById('ans'+idx).value;
+        const el = document.getElementById('ans'+idx);
+        
+        try {
+            if(math.simplify(userIn).equals(math.simplify(targets[idx]))) {
+                el.classList.add('correct');
+                correctCount[idx] = true;
+                updateProgress();
+            } else {
+                el.classList.remove('correct');
+                correctCount[idx] = false;
+                updateProgress();
+            }
+        } catch(e) {}
+    }
+
+    function updateProgress() {
+        const score = correctCount.filter(x => x).length;
+        document.getElementById('progress-fill').style.width = (score / 4 * 100) + "%";
+        if(score === 4) document.getElementById('win-msg').style.display = 'block';
+    }
+
+    newGame();
+</script>
+
+</body>
+</html>
